@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How I built Argus</title>
+<meta name="description" content="The honest blueprint of Argus, a personal AI assistant built at night. What exists, what broke, what it still can't do.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>:root{
+  /* One world: night. A single gold thread runs from the orb's eye down the page; each chapter is a drop on it. */
+  --night:#05060b; --panel:#0b0d17; --ink:#f4f1ea; --dim:#a4a8b8; --gold:#d9c496; --sapphire:#3f74ff;
+  --hair:rgba(217,196,150,.24); --hair-soft:rgba(164,168,184,.16);
+  --display:"Cormorant Garamond","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --body:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --gutter:20px; --rail:20px; --measure:640px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--night);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--night);color:var(--ink);font:400 17px/1.62 var(--body);overflow-x:hidden}
+html[data-lang="en"] .ro,html[data-lang="ro"] .en{display:none}
+h1,h2,h3,h4,p,ul,ol,dl,dd{margin:0}
+ul,ol{padding:0;list-style:none}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:2px}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px var(--gutter);max-width:1180px;margin:0 auto}
+.brand{font:500 11.5px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.brand i{font-style:normal;color:var(--gold);padding:0 4px}
+.lang{display:flex;border:1px solid var(--hair);border-radius:999px;overflow:hidden;flex:none}
+.lang button{appearance:none;background:none;border:0;color:var(--dim);font:500 12px/1 var(--mono);letter-spacing:.1em;padding:9px 13px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--gold);color:#14110a}
+
+.hero{max-width:1180px;margin:0 auto;padding:4px var(--gutter) 40px;display:grid;gap:8px}
+.orb-wrap{width:min(78vw,380px);aspect-ratio:1;margin:0 auto -18px;position:relative}
+.orb{width:100%;height:100%;object-fit:cover;display:block;mix-blend-mode:screen;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 60%,transparent 71%);mask-image:radial-gradient(circle at 50% 50%,#000 60%,transparent 71%)}
+.eyebrow{font:500 11.5px/1.5 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+h1{font:600 clamp(46px,13.2vw,104px)/.94 var(--display);letter-spacing:-.012em;margin-top:14px;text-wrap:balance}
+h1 em{display:block;font:italic 500 .56em/1.1 var(--display);color:var(--gold);margin-top:.18em;letter-spacing:0}
+.lede{font-size:18px;line-height:1.6;max-width:34em;margin-top:22px;color:#e4e1da}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;margin-top:30px;max-width:560px}
+.stats dt{font:600 46px/1 var(--display);font-variant-numeric:lining-nums tabular-nums}
+.stats dd{font-size:13.5px;line-height:1.35;color:var(--dim);margin-top:4px}
+.strip{display:flex;flex-wrap:wrap;gap:7px 6px;margin-top:30px;max-width:560px}
+.eye{width:28px;height:16px;flex:none;display:block}
+.strip-cap{font-size:13px;color:var(--dim);margin-top:10px;max-width:34em}
+
+main{position:relative;max-width:1180px;margin:0 auto;padding:0 var(--gutter) 40px}
+.thread{position:absolute;left:calc(var(--gutter) + var(--rail)/2);top:0;bottom:0;width:1px;background:var(--hair-soft)}
+.thread i{position:absolute;inset:0 0 auto 0;height:0;background:linear-gradient(var(--gold),var(--gold));box-shadow:0 0 6px rgba(217,196,150,.5)}
+section{position:relative;padding:54px 0 10px calc(var(--rail) + 22px)}
+section>*{max-width:var(--measure)}
+.sec-head{position:relative;display:grid;gap:6px;margin-bottom:18px;max-width:780px}
+.drop{position:absolute;left:calc(-22px - var(--rail)/2 - 4.5px);top:5px;width:10px;height:10px;border-radius:50%;background:var(--night);border:1px solid var(--gold);transition:background .4s,box-shadow .4s}
+section.on .drop{background:var(--gold);box-shadow:0 0 12px rgba(217,196,150,.7)}
+.sec-n{font:500 12px/1.6 var(--mono);letter-spacing:.14em;color:var(--gold)}
+h2{font:600 clamp(34px,8.6vw,58px)/1 var(--display);letter-spacing:-.008em;text-wrap:balance}
+section p+p{margin-top:14px}
+.intro{color:var(--dim);margin-bottom:22px}
+.big{font:500 clamp(24px,5.6vw,31px)/1.24 var(--display);color:var(--ink)}
+.wont{margin-top:22px!important;padding:14px 16px;border-left:1px solid var(--gold);background:var(--panel);font-size:15.5px}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;font:500 11.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:var(--dim)}
+.chip.c-live,.chip.c-part{color:var(--gold)}
+.chip .eye{width:22px;height:13px}
+.group{margin-top:30px;max-width:780px}
+.group-h{font:italic 500 25px/1.1 var(--display);color:var(--gold);padding-bottom:10px;border-bottom:1px solid var(--hair)}
+.part{padding:16px 0;border-bottom:1px solid var(--hair-soft)}
+.part-head{display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:10px}
+.num{font:400 12px/1 var(--mono);color:var(--dim)}
+.part h4{font:600 23px/1.12 var(--display)}
+.part p{font-size:15.5px;line-height:1.55;margin-top:7px;color:#dedbd3;max-width:var(--measure)}
+.part .meta{font:400 12px/1.5 var(--mono);color:var(--dim);margin-top:7px}
+
+.tl{display:grid;gap:0;max-width:700px}
+.tl li{display:grid;grid-template-columns:86px 1fr;gap:14px;padding:11px 0;border-bottom:1px solid var(--hair-soft);font-size:15.5px;line-height:1.5}
+.tl time{font:500 12px/1.9 var(--mono);color:var(--gold);white-space:nowrap}
+
+.broke-grid{display:grid;gap:14px;max-width:960px}
+.broke{background:var(--panel);border:1px solid var(--hair-soft);border-top-color:var(--hair);padding:18px 18px 20px}
+.broke time{font:500 12px/1.4 var(--mono);color:var(--gold)}
+.broke h4{font:600 25px/1.1 var(--display);margin:8px 0 9px;text-wrap:balance}
+.broke p{font-size:15.5px;line-height:1.56;color:#dedbd3}
+.broke img{display:block;width:120px;height:120px;object-fit:cover;border-radius:50%;margin-bottom:14px;filter:saturate(.9)}
+
+.rules{counter-reset:r;display:grid;gap:0;max-width:720px}
+.rules li{counter-increment:r;display:grid;grid-template-columns:44px 1fr;gap:6px;padding:15px 0;border-bottom:1px solid var(--hair-soft);font-size:16.5px;line-height:1.5}
+.rules li::before{content:counter(r);font:italic 500 34px/.9 var(--display);color:var(--gold)}
+.limit{margin-top:20px!important;padding:14px 16px;border-left:1px solid var(--gold);background:var(--panel);font-size:15.5px}
+
+.cant{display:grid;gap:0;max-width:720px}
+.cant li{position:relative;padding:12px 0 12px 26px;border-bottom:1px solid var(--hair-soft);font-size:16px;line-height:1.5}
+.cant li::before{content:"";position:absolute;left:2px;top:22px;width:12px;height:1px;background:var(--dim)}
+
+.cost{display:grid;gap:14px;margin-bottom:18px;max-width:780px}
+.cost>div{background:var(--panel);border:1px solid var(--hair-soft);padding:16px 18px}
+.cost h4{font:500 11.5px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.cost p{font-size:15.5px;line-height:1.55}
+
+.adv{display:grid;gap:20px;margin-bottom:30px;max-width:720px}
+.adv h4{font:600 26px/1.1 var(--display)}
+.adv p{font-size:15.5px;color:var(--dim);margin-top:5px}
+
+.book h2{color:var(--gold)}
+.cta{display:inline-block;margin-top:10px;padding:14px 18px;border:1px solid var(--gold);color:var(--gold);text-decoration:none;font:500 13px/1.4 var(--mono);letter-spacing:.06em}
+.cta:hover{background:var(--gold);color:#14110a}
+footer{max-width:1180px;margin:0 auto;padding:26px var(--gutter) 46px;border-top:1px solid var(--hair-soft)}
+footer p{font:400 12px/1.6 var(--mono);color:var(--dim);max-width:60em}
+
+@media (min-width:860px){
+  :root{--gutter:40px;--rail:28px}
+  body{font-size:18px}
+  .hero{grid-template-columns:1.15fr .85fr;align-items:center;gap:30px;padding-top:26px;padding-bottom:70px}
+  .hero-text{order:1}.orb-wrap{order:2;width:min(40vw,500px);margin:0}
+  .stats{grid-template-columns:repeat(4,auto);gap:24px 34px;max-width:none;justify-content:start}
+  .stats dt{font-size:56px}
+  section{padding-top:84px}
+  .broke-grid{grid-template-columns:1fr 1fr}
+  .broke.has-pic{grid-column:1/-1;display:grid;grid-template-columns:150px 1fr;gap:24px;align-items:center}
+  .broke.has-pic img{width:150px;height:150px;margin:0}
+  .cost{grid-template-columns:1fr 1fr}
+  .adv{grid-template-columns:1fr 1fr;gap:28px 40px;max-width:900px}
+  .tl li{grid-template-columns:120px 1fr}
+}
+@media (prefers-reduced-motion:reduce){.drop{transition:none}}
+.gloss{display:grid;gap:10px;margin:18px 0 6px;padding:16px 18px;background:var(--panel);border-left:1px solid var(--gold);max-width:720px}
+.gloss div{display:grid;gap:2px}
+.gloss dt{font:500 11.5px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.gloss dd{font-size:15px;line-height:1.5;color:#dedbd3}
+@media (min-width:860px){.gloss div{grid-template-columns:130px 1fr;gap:14px;align-items:baseline}}
+.touch{margin-bottom:24px!important;padding-left:16px;border-left:1px solid var(--gold)}
+.toc{max-width:1180px;margin:0 auto;padding:6px var(--gutter) 34px}
+.toc h2{font:500 11.5px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:10px}
+.toc ol{display:grid;gap:0;max-width:640px;border-top:1px solid var(--hair)}
+.toc a{display:grid;grid-template-columns:38px 1fr;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--hair-soft);text-decoration:none;font:600 21px/1.15 var(--display)}
+.toc a:hover{color:var(--gold)}
+.toc-n{font:400 12px/1 var(--mono);color:var(--dim)}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+details.group{margin-top:14px}
+details.group>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:14px 0 12px;border-bottom:1px solid var(--hair)}
+details.group>summary::-webkit-details-marker{display:none}
+details.group>summary .group-h{border:0;padding:0}
+.g-eyes{display:flex;gap:4px}.g-eyes .eye{width:20px;height:12px}
+.g-n{font:500 12px/1 var(--mono);color:var(--dim);min-width:26px;text-align:right}
+.g-n::after{content:" +";color:var(--gold)}
+details[open]>summary .g-n::after{content:" −"}
+.first-grid{display:grid;gap:14px;counter-reset:f;max-width:960px}
+.first-grid li{counter-increment:f;background:var(--panel);border:1px solid var(--hair-soft);border-top-color:var(--hair);padding:18px 18px 16px}
+.first-grid h4{font:600 28px/1.05 var(--display)}
+.first-grid h4::before{content:counter(f) " ";font:italic 500 28px/1 var(--display);color:var(--gold);margin-right:4px}
+.first-grid .does{color:var(--gold);font-size:15.5px;margin-top:6px}
+.first-grid p{font-size:15.5px;line-height:1.56;margin-top:8px;color:#dedbd3}
+.first-grid .meta,.states+.meta{font:400 12px/1.5 var(--mono);color:var(--dim);margin-top:10px}
+.sub{font:italic 500 25px/1.1 var(--display);color:var(--gold);margin:34px 0 8px}
+.need li::before{background:var(--gold)}
+.states{display:grid;grid-template-columns:1fr 1fr;gap:18px 14px;max-width:900px}
+.states img{display:block;width:100%;height:auto;mix-blend-mode:screen}
+.states h4{font:600 22px/1.1 var(--display);margin-top:4px}
+.states p{font-size:14px;line-height:1.4;color:var(--dim);margin-top:3px}
+@media (min-width:860px){.first-grid{grid-template-columns:1fr 1fr}.states{grid-template-columns:repeat(5,1fr)}.toc ol{grid-template-columns:1fr 1fr;column-gap:40px;max-width:900px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="eye-live" viewBox="0 0 28 16"><path d="M1 8C6 1.5 22 1.5 27 8C22 14.5 6 14.5 1 8Z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><circle cx="14" cy="8" r="4.6" fill="var(--sapphire)"/><circle cx="14" cy="8" r="1.7" fill="var(--gold)"/></symbol>
+    <symbol id="eye-part" viewBox="0 0 28 16"><path d="M1 8C6 1.5 22 1.5 27 8C22 14.5 6 14.5 1 8Z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><path d="M14 3.4A4.6 4.6 0 0 0 14 12.6Z" fill="var(--sapphire)"/><circle cx="14" cy="8" r="4.6" fill="none" stroke="var(--sapphire)" stroke-width="1"/></symbol>
+    <symbol id="eye-test" viewBox="0 0 28 16"><path d="M1 8C6 1.5 22 1.5 27 8C22 14.5 6 14.5 1 8Z" fill="none" stroke="var(--dim)" stroke-width="1.2"/><circle cx="14" cy="8" r="4.2" fill="none" stroke="var(--dim)" stroke-width="1" stroke-dasharray="2 2"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <span class="brand">Construit noaptea <i>·</i> <span class="en">Field guide</span><span class="ro">Ghid de teren</span></span>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" id="lang-en" data-set="en" aria-pressed="true">EN</button>
+    <button type="button" id="lang-ro" data-set="ro" aria-pressed="false">RO</button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="orb-wrap" aria-hidden="true">
+    <video id="orb" class="orb" autoplay muted loop playsinline poster="orb.jpg" src="orb.mp4"></video>
+  </div>
+  <div class="hero-text">
+    <p class="eyebrow"><span class="en">Free guide · state of the build on 20 November 2026</span><span class="ro">Ghid gratuit · starea construcției la 20 noiembrie 2026</span></p>
+    <h1><span class="en">How I built Argus</span><span class="ro">Cum l-am construit pe Argus</span><em><span class="en">the honest blueprint</span><span class="ro">schița cinstită</span></em></h1>
+    <p class="lede"><span class="en">Argus is my own AI assistant. It lives on my Mac, wakes when I say its name, and needs my fingerprint before it deletes for good or sends anything. I have been building it for 45 days. This is what exists today, what broke on the way, and what it still can't do.</span><span class="ro">Argus e asistentul meu AI. Trăiește pe Mac-ul meu, se trezește când îi spun numele și are nevoie de amprenta mea înainte să șteargă definitiv sau să trimită ceva. Îl construiesc de 45 de zile. Aici e ce există azi, ce s-a stricat pe drum și ce nu poate încă.</span></p>
+    <dl class="stats">
+      <div><dt>45</dt><dd><span class="en">days, 7 Oct to 20 Nov</span><span class="ro">de zile, 7 oct. – 20 nov.</span></dd></div>
+      <div><dt><span class="en">1,276</span><span class="ro">1.276</span></dt><dd><span class="en">saved changes to the code, plus 270 for the face</span><span class="ro">modificări salvate în cod, plus 270 pentru față</span></dd></div>
+      <div><dt>17</dt><dd><span class="en">parts</span><span class="ro">piese</span></dd></div>
+      <div><dt>8</dt><dd><span class="en">live</span><span class="ro">live</span></dd></div>
+    </dl>
+    <div class="strip" role="img" aria-label="17 parts: 8 live, 6 partly, 3 in tests only"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg></div>
+    <p class="strip-cap"><span class="en">One eye for each part. Full, half or empty: live, partly, tests only. The meaning of each is below.</span><span class="ro">Un ochi pentru fiecare piesă. Plin, pe jumătate sau gol: live, parțial, doar în teste. Ce înseamnă fiecare scrie mai jos.</span></p>
+  </div>
+</div>
+
+<nav class="toc" aria-label="Contents"><h2><span class="en">In this guide</span><span class="ro">În acest ghid</span></h2><ol><li><a href="#start"><span class="toc-n">00</span><span class="en">The demo came first</span><span class="ro">Demo-ul a venit primul</span></a></li><li><a href="#first"><span class="toc-n">01</span><span class="en">Your first version: four parts</span><span class="ro">Prima ta versiune: patru piese</span></a></li><li><a href="#looks"><span class="toc-n">02</span><span class="en">What it looks like</span><span class="ro">Cum arată</span></a></li><li><a href="#parts"><span class="toc-n">03</span><span class="en">The 17 parts, with their real status</span><span class="ro">Cele 17 piese, cu starea lor reală</span></a></li><li><a href="#order"><span class="toc-n">04</span><span class="en">The order it happened in</span><span class="ro">Ordinea în care s-a întâmplat</span></a></li><li><a href="#broke"><span class="toc-n">05</span><span class="en">What broke</span><span class="ro">Ce s-a stricat</span></a></li><li><a href="#rules"><span class="toc-n">06</span><span class="en">The rules built into it</span><span class="ro">Regulile puse în el</span></a></li><li><a href="#cant"><span class="toc-n">07</span><span class="en">What it still can't do</span><span class="ro">Ce nu poate încă</span></a></li><li><a href="#cost"><span class="toc-n">08</span><span class="en">What it costs</span><span class="ro">Cât costă</span></a></li><li><a href="#tomorrow"><span class="toc-n">09</span><span class="en">Six lessons from these 45 days</span><span class="ro">Șase lecții din cele 45 de zile</span></a></li><li><a href="#book"><span class="toc-n">10</span><span class="en">The book</span><span class="ro">Cartea</span></a></li></ol></nav>
+
+<main>
+<div class="thread" aria-hidden="true"><i id="thread-fill"></i></div>
+
+<section id="start" class="first">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">00</span><h2><span class="en">The demo came first</span><span class="ro">Demo-ul a venit primul</span></h2></div>
+  <p class="big"><span class="en">The first saved version, on 7 October, already did this: I hold a key, I speak, I hear an answer. That is the part people film.</span><span class="ro">Prima versiune salvată, pe 7 octombrie, făcea deja asta: țin o tastă, vorbesc, aud un răspuns. Asta e partea pe care o filmează lumea.</span></p>
+  <p><span class="en">Everything since then went into the part nobody films: making it something I can leave running all day. If someone promises you an assistant in an hour, they are selling you that first version.</span><span class="ro">Tot ce a urmat a intrat în partea pe care n-o filmează nimeni: să fie ceva ce pot lăsa pornit toată ziua. Dacă cineva îți promite un asistent într-o oră, îți vinde acea primă versiune.</span></p>
+  <p><span class="en">How I work: I build with Claude Code. I decide what gets built and I test it on the real Argus. A part counts as live only when it is proven there. Passing tests is not enough.</span><span class="ro">Cum lucrez: construiesc cu Claude Code. Eu hotărăsc ce se construiește și eu testez pe Argus-ul real. O piesă e «live» doar când e dovedită acolo. Să treacă testele nu ajunge.</span></p>
+  <p class="wont"><span class="en">What you won't find here: code, a one-hour promise, or monthly costs I haven't measured yet.</span><span class="ro">Ce nu găsești aici: cod, promisiunea că îl faci într-o oră sau costuri lunare pe care încă nu le-am măsurat.</span></p>
+</section>
+
+<section id="first">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">01</span><h2><span class="en">Your first version: four parts</span><span class="ro">Prima ta versiune: patru piese</span></h2></div>
+  <p class="intro"><span class="en">This is what I had at the end of the first day. It is the smallest thing I would call an assistant. No code here: what each part does, what to watch for, and what I used.</span><span class="ro">Asta aveam la sfârșitul primei zile. E cel mai mic lucru pe care l-aș numi asistent. Fără cod: ce face fiecare piesă, la ce să fii atent și ce am folosit eu.</span></p>
+  <ol class="first-grid"><li><h4><span class="en">Ear</span><span class="ro">Urechea</span></h4><p class="does"><span class="en">Turns what you say into text.</span><span class="ro">Transformă în text ce spui.</span></p><p><span class="en">Start with a key you hold while you talk. It lets you skip a hard problem: knowing when you have stopped talking. Mine listened without a key five days later.</span><span class="ro">Începe cu o tastă pe care o ții apăsată cât vorbești. Așa sari peste o problemă grea: să știe când ai terminat de vorbit. Al meu a ascultat fără tastă cinci zile mai târziu.</span></p><p class="meta"><span class="en">What I used</span><span class="ro">Ce am folosit eu</span>: <span class="en">Whisper, running on the Mac</span><span class="ro">Whisper, rulat pe Mac</span></p></li><li><h4><span class="en">Brain</span><span class="ro">Creierul</span></h4><p class="does"><span class="en">Reads the text and writes the answer.</span><span class="ro">Citește textul și scrie răspunsul.</span></p><p><span class="en">Put the date and the time in every message you send it. Mine gets them every time. Keep the secret key the service gives you out of your code.</span><span class="ro">Pune data și ora în fiecare mesaj pe care i-l trimiți. Al meu le primește de fiecare dată. Ține cheia secretă primită de la serviciu în afara codului.</span></p><p class="meta"><span class="en">What I used</span><span class="ro">Ce am folosit eu</span>: <span class="en">Claude, through its paid access for developers</span><span class="ro">Claude, prin accesul lui plătit pentru programatori</span></p></li><li><h4><span class="en">Voice</span><span class="ro">Vocea</span></h4><p class="does"><span class="en">Reads the answer out loud.</span><span class="ro">Citește răspunsul cu voce tare.</span></p><p><span class="en">Listen to it on your own speakers before anything else. Before my first saved version the voice crackled, until the app itself sent the sound at 48 kHz.</span><span class="ro">Ascult-o pe boxele tale înainte de orice. Înainte de prima mea versiune salvată vocea pocnea, până când aplicația a trimis singură sunetul la 48 kHz.</span></p><p class="meta"><span class="en">What I used</span><span class="ro">Ce am folosit eu</span>: <span class="en">ElevenLabs, with a local offline voice as backup</span><span class="ro">ElevenLabs, cu o voce locală, fără internet, ca rezervă</span></p></li><li><h4><span class="en">Memory</span><span class="ro">Memoria</span></h4><p class="does"><span class="en">Keeps facts from one conversation to the next.</span><span class="ro">Păstrează fapte de la o conversație la alta.</span></p><p><span class="en">Decide early what it must refuse to store. Mine refuses passwords, keys and card numbers before anything is written.</span><span class="ro">Hotărăște devreme ce trebuie să refuze să rețină. A mea refuză parole, chei și numere de card înainte să scrie ceva.</span></p><p class="meta"><span class="en">What I used</span><span class="ro">Ce am folosit eu</span>: <span class="en">SQLite, a database on the Mac</span><span class="ro">SQLite, o bază de date pe Mac</span></p></li></ol><h4 class="sub"><span class="en">What I added next, in this order</span><span class="ro">Ce am adăugat apoi, în ordinea asta</span></h4><ol class="tl"><li><time><span class="en">9 Oct</span><span class="ro">9 oct.</span></time><span><span class="en">A yes/no card before anything risky.</span><span class="ro">Un card cu da/nu înaintea oricărui lucru riscant.</span></span></li><li><time><span class="en">11 Oct</span><span class="ro">11 oct.</span></time><span><span class="en">A fast set of automatic checks.</span><span class="ro">Un set rapid de verificări automate.</span></span></li><li><time><span class="en">12 Oct</span><span class="ro">12 oct.</span></time><span><span class="en">Talking without a key.</span><span class="ro">Vorbit fără tastă.</span></span></li><li><time><span class="en">27 Oct</span><span class="ro">27 oct.</span></time><span><span class="en">Only then, the first hands: Argus doing things on the Mac, starting with music.</span><span class="ro">Abia apoi, primele mâini: Argus face lucruri pe Mac, începând cu muzica.</span></span></li></ol><h4 class="sub"><span class="en">What you need before you start</span><span class="ro">De ce ai nevoie înainte să începi</span></h4><ul class="cant need"><li><span class="en">A computer with a microphone that you can leave on.</span><span class="ro">Un calculator cu microfon, pe care îl poți lăsa pornit.</span></li><li><span class="en">Paid accounts for the brain and for the voice.</span><span class="ro">Conturi plătite pentru creier și pentru voce.</span></li><li><span class="en">A way to write the code. I build with Claude Code, an AI coding tool. A part still counts as done only after I test it on the real Argus.</span><span class="ro">Un mod de a scrie codul. Eu construiesc cu Claude Code, o unealtă AI de programare. O piesă e gata tot doar după ce o testez eu pe Argus-ul real.</span></li></ul>
+</section>
+
+<section id="looks">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">02</span><h2><span class="en">What it looks like</span><span class="ro">Cum arată</span></h2></div>
+  <p class="intro"><span class="en">The orb has no human face and no mouth. It shows what Argus is doing.</span><span class="ro">Orbul nu are chip de om și nici gură. El arată ce face Argus.</span></p>
+  <ul class="states"><li><img src="st-rest.jpg" alt="" width="300" height="300" loading="lazy"><h4><span class="en">Resting</span><span class="ro">În repaus</span></h4><p><span class="en">The peacock eye, one thin gold thread.</span><span class="ro">Ochiul de păun și un singur fir auriu, subțire.</span></p></li><li><img src="st-listen.jpg" alt="" width="300" height="300" loading="lazy"><h4><span class="en">Listening</span><span class="ro">Ascultă</span></h4><p><span class="en">The eye turns silver.</span><span class="ro">Ochiul devine argintiu.</span></p></li><li><img src="st-think.jpg" alt="" width="300" height="300" loading="lazy"><h4><span class="en">Thinking</span><span class="ro">Se gândește</span></h4><p><span class="en">A gold drop on the thread for each tool it uses.</span><span class="ro">O picătură aurie pe fir pentru fiecare unealtă folosită.</span></p></li><li><img src="st-speak.jpg" alt="" width="300" height="300" loading="lazy"><h4><span class="en">Speaking</span><span class="ro">Vorbește</span></h4><p><span class="en">Warm gold light from the eye.</span><span class="ro">Lumină caldă, aurie, din ochi.</span></p></li><li><img src="st-panoptes.jpg" alt="" width="300" height="300" loading="lazy"><h4><span class="en">Panoptes</span><span class="ro">Panoptes</span></h4><p><span class="en">Named after Argus Panoptes, the hundred-eyed giant of Greek myth. The eye opens into many.</span><span class="ro">Numit după Argus Panoptes, uriașul cu o sută de ochi din mitul grec. Ochiul se desface în mulți ochi.</span></p></li></ul><p class="meta"><span class="en">Captured from the Argus app on 14 November. These states will change: their shapes and colours are being redone in the next orb round.</span><span class="ro">Capturi din aplicația Argus, 14 noiembrie. Stările astea se vor schimba: formele și culorile lor se refac în următoarea rundă a orbului.</span></p>
+</section>
+
+<section id="parts">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">03</span><h2><span class="en">The 17 parts, with their real status</span><span class="ro">Cele 17 piese, cu starea lor reală</span></h2></div>
+  <p class="intro"><span class="en">Live means it is proven on the real Argus: I confirmed it myself, or it runs there after every merge. Partly means some of it is proven on the real Argus, or it is switched on and not yet proven. Tests only means it passes in tests and has not been proven on the real Argus.</span><span class="ro">Live înseamnă că e dovedită pe Argus-ul real: am confirmat-o eu sau rulează acolo după fiecare integrare. Parțial înseamnă că o parte e dovedită pe Argus-ul real sau că e pornită, dar încă nedovedită. Doar în teste înseamnă că trece testele și nu e încă dovedită pe Argus-ul real.</span></p>
+  <p class="legend"><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span><span class="chip c-test"><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><span class="en">Tests only</span><span class="ro">Doar în teste</span></span></p><dl class="gloss"><div><dt><span class="en">Merge</span><span class="ro">Integrare</span></dt><dd><span class="en">the moment new work enters the version I actually run. The latest is number 64.</span><span class="ro">momentul în care munca nouă intră în versiunea pe care o rulez. Cea mai recentă are numărul 64.</span></dd></div><div><dt><span class="en">Hands</span><span class="ro">Mâini</span></dt><dd><span class="en">things Argus can do on my Mac, like playing music or reading mail.</span><span class="ro">lucruri pe care Argus le poate face pe Mac, cum ar fi să pună muzică sau să citească mailul.</span></dd></div><div><dt><span class="en">Card</span><span class="ro">Card</span></dt><dd><span class="en">a yes/no box on the screen before a risky action.</span><span class="ro">o casetă cu da/nu pe ecran, înaintea unei acțiuni riscante.</span></dd></div><div><dt><span class="en">Golden list</span><span class="ro">Lista de aur</span></dt><dd><span class="en">features I confirmed by hand, re-tested automatically on real recordings.</span><span class="ro">funcții confirmate de mine, retestate automat pe înregistrări reale.</span></dd></div></dl><details class="group" open><summary><h3 class="group-h"><span class="en">Ears</span><span class="ro">Urechea</span></h3><span class="g-eyes"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg></span><span class="g-n">5</span></summary><ul class="parts"><li class="part">
+  <div class="part-head"><span class="num">01</span><h4><span class="en">Listening without a button</span><span class="ro">Ascultare fără buton</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">Listens locally all the time, wakes on “Argus”, stops on “Stop”. Some cases from live use are still open.</span><span class="ro">Ascultă local tot timpul, se trezește la «Argus», se oprește la «Stop». Câteva cazuri din folosirea reală sunt încă deschise.</span></p>
+  <p class="meta"><span class="en">since 12 Oct</span><span class="ro">din 12 oct.</span> · Silero VAD · Whisper large-v3 / MLX</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">02</span><h4><span class="en">Streaming transcription</span><span class="ro">Transcriere în flux</span></h4><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span></div>
+  <p><span class="en">After the word that wakes it, my speech is turned to text by an online service as I speak. On any error it switches to the local backup. Added to the running version on 20 Nov, not yet tested live since.</span><span class="ro">După cuvântul de trezire, vorbirea mea e transformată în text de un serviciu online, pe măsură ce vorbesc. La orice eroare trece pe rezerva locală. Intrată în versiunea care rulează pe 20 nov., netestată încă live de atunci.</span></p>
+  <p class="meta"><span class="en">since 18 Nov</span><span class="ro">din 18 nov.</span> · Soniox</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">03</span><h4><span class="en">A trained wake word</span><span class="ro">Cuvânt de trezire antrenat</span></h4><span class="chip c-test"><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><span class="en">Tests only</span><span class="ro">Doar în teste</span></span></div>
+  <p><span class="en">A model trained on my voice saying “Argus”. Measured on recordings: 30 of 30 detected, 0 false alarms in 226 clips. Not yet proven live.</span><span class="ro">Un model antrenat pe vocea mea spunând «Argus». Măsurat pe înregistrări: 30 din 30 prinse, 0 alarme false pe 226 de clipuri. Încă nedovedit live.</span></p>
+  <p class="meta"><span class="en">since 18 Nov</span><span class="ro">din 18 nov.</span> · ONNX</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">04</span><h4><span class="en">Echo cancellation</span><span class="ro">Anularea ecoului</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">Argus must not hear itself. Apple's Voice Processing does this, after my own attempt failed. On 20 Nov it dropped out silently when the laptop lid was closed. The fix exists in tests only.</span><span class="ro">Argus nu trebuie să se audă pe el însuși. Asta face Voice Processing de la Apple, după ce varianta mea a eșuat. Pe 20 nov. a căzut fără niciun semn când capacul laptopului era închis. Reparația există doar în teste.</span></p>
+  <p class="meta"><span class="en">since 16 Oct</span><span class="ro">din 16 oct.</span> · Apple Voice Processing · Swift</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">05</span><h4><span class="en">Asking back</span><span class="ro">Întrebarea înapoi</span></h4><span class="chip c-test"><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><span class="en">Tests only</span><span class="ro">Doar în teste</span></span></div>
+  <p><span class="en">When it probably misheard, it asks: “Did you say tomorrow?” Fixed rules, no model.</span><span class="ro">Când probabil a auzit greșit, întreabă: «Ai zis mâine?» Reguli fixe, fără model.</span></p>
+  <p class="meta"><span class="en">since 23 Oct</span><span class="ro">din 23 oct.</span> · Python</p>
+</li></ul></details><details class="group"><summary><h3 class="group-h"><span class="en">Voice and brain</span><span class="ro">Vocea și creierul</span></h3><span class="g-eyes"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg></span><span class="g-n">4</span></summary><ul class="parts"><li class="part">
+  <div class="part-head"><span class="num">06</span><h4><span class="en">Knowing my voice</span><span class="ro">Recunoașterea vocii mele</span></h4><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span></div>
+  <p><span class="en">Scores how close a phrase is to my voice. On a weak match it asks me to repeat. Shown as active in the startup log on 20 Nov. Not yet proven live.</span><span class="ro">Dă un scor: cât seamănă fraza cu vocea mea. La scor slab îmi cere să repet. Apare activă în jurnalul de pornire din 20 nov. Încă nedovedită live.</span></p>
+  <p class="meta"><span class="en">since 24 Oct</span><span class="ro">din 24 oct.</span> · ECAPA / ONNX · local</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">07</span><h4><span class="en">Voice</span><span class="ro">Vocea</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">Speaks in a streamed voice. A local offline voice is the fallback.</span><span class="ro">Vorbește cu o voce în flux. Rezerva e o voce locală, fără internet.</span></p>
+  <p class="meta"><span class="en">since 7 Oct</span><span class="ro">din 7 oct.</span> · ElevenLabs · Piper</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">08</span><h4><span class="en">Brain</span><span class="ro">Creierul</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">Claude with a set of tools. Every message carries the date and time. A small model writes the session summaries.</span><span class="ro">Claude cu un set de unelte. Fiecare mesaj poartă data și ora. Un model mic scrie rezumatele de sesiune.</span></p>
+  <p class="meta"><span class="en">since 7 Oct</span><span class="ro">din 7 oct.</span> · Claude Sonnet 5.5 · Haiku 4.5</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">09</span><h4><span class="en">Memory</span><span class="ro">Memoria</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">Facts, preferences, tasks and session summaries in one local database. Deletion is reversible and there is an undo. It refuses to store passwords, keys, card numbers or medical terms.</span><span class="ro">Fapte, preferințe, sarcini și rezumate de sesiune într-o singură bază de date locală. Ștergerea e reversibilă și există «înapoi». Refuză să rețină parole, chei, numere de card sau termeni medicali.</span></p>
+  <p class="meta"><span class="en">since 7 Oct</span><span class="ro">din 7 oct.</span> · SQLite</p>
+</li></ul></details><details class="group"><summary><h3 class="group-h"><span class="en">Eyes and face</span><span class="ro">Ochii și fața</span></h3><span class="g-eyes"><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg></span><span class="g-n">2</span></summary><ul class="parts"><li class="part">
+  <div class="part-head"><span class="num">10</span><h4><span class="en">Sight</span><span class="ro">Vederea</span></h4><span class="chip c-test"><svg class="eye e-test" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-test"/></svg><span class="en">Tests only</span><span class="ro">Doar în teste</span></span></div>
+  <p><span class="en">The only sight it has is a screenshot when I ask “what's on the screen?”. No camera. Continuous vision is not started.</span><span class="ro">Singura vedere e o captură de ecran când întreb «ce e pe ecran?». Fără cameră. Vederea continuă nu e începută.</span></p>
+  <p class="meta"><span class="en">since 4 Nov</span><span class="ro">din 4 nov.</span> · screen capture</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">11</span><h4><span class="en">Face</span><span class="ro">Fața</span></h4><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span></div>
+  <p><span class="en">First an eye, then a statue bust, now an orb. The bust was confirmed live on 27 Oct. The orb became the default face on 14 Nov.</span><span class="ro">Întâi un ochi, apoi un bust de statuie, acum un orb. Bustul a fost confirmat live pe 27 oct. Orbul a devenit fața implicită pe 14 nov.</span></p>
+  <p class="meta"><span class="en">since 7 Oct</span><span class="ro">din 7 oct.</span> · WebGL2 · Swift</p>
+</li></ul></details><details class="group"><summary><h3 class="group-h"><span class="en">Hands</span><span class="ro">Mâinile</span></h3><span class="g-eyes"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg></span><span class="g-n">3</span></summary><ul class="parts"><li class="part">
+  <div class="part-head"><span class="num">12</span><h4><span class="en">Mail</span><span class="ro">Mailul</span></h4><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span></div>
+  <p><span class="en">Reads and sorts mail from a fixed list of suppliers. Sending real mail is switched off in the settings.</span><span class="ro">Citește și sortează mailul de la o listă fixă de furnizori. Trimiterea reală de mailuri e oprită din setări.</span></p>
+  <p class="meta"><span class="en">since 4 Nov</span><span class="ro">din 4 nov.</span> · Apple Mail</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">13</span><h4><span class="en">Bills</span><span class="ro">Facturile</span></h4><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span></div>
+  <p><span class="en">“What's left to do?” lists bills by supplier. Every number shows its source. With no source it says “I don't know”.</span><span class="ro">«Ce mai e de făcut?» arată facturile pe furnizori. Fiecare cifră își arată sursa. Fără sursă spune «nu știu».</span></p>
+  <p class="meta"><span class="en">since 7 Nov</span><span class="ro">din 7 nov.</span> · fixed rules, no model</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">14</span><h4><span class="en">Music</span><span class="ro">Muzica</span></h4><span class="chip c-part"><svg class="eye e-part" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-part"/></svg><span class="en">Partly</span><span class="ro">Parțial</span></span></div>
+  <p><span class="en">Play, louder, stop passed 3 of 3 once, live, on 31 Oct. The same day left open cases on the same commands, including music that doesn't start.</span><span class="ro">Pune, mai tare, oprește: 3 din 3 o dată, live, pe 31 oct. Aceeași zi a lăsat cazuri deschise pe aceleași comenzi, inclusiv muzică ce nu pornește.</span></p>
+  <p class="meta"><span class="en">since 27 Oct</span><span class="ro">din 27 oct.</span> · Apple Music · Chrome</p>
+</li></ul></details><details class="group"><summary><h3 class="group-h"><span class="en">The safety net</span><span class="ro">Plasa de siguranță</span></h3><span class="g-eyes"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg></span><span class="g-n">3</span></summary><ul class="parts"><li class="part">
+  <div class="part-head"><span class="num">15</span><h4><span class="en">Confirmations</span><span class="ro">Confirmările</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">A yes/no card on screen for anything risky, yes and no recognized in code, Touch ID for permanent deletion and for sending.</span><span class="ro">Un card cu da/nu pe ecran pentru orice e riscant, «da» și «nu» recunoscute în cod, Touch ID la ștergerea definitivă și la trimitere.</span></p>
+  <p class="meta"><span class="en">since 9 Oct</span><span class="ro">din 9 oct.</span> · Touch ID</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">16</span><h4><span class="en">Startup</span><span class="ro">Pornirea</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">Starts as an app, refuses to run a build that isn't the approved one, and is checked every 5 minutes.</span><span class="ro">Pornește ca aplicație, refuză să ruleze o versiune care nu e cea aprobată și e verificat la fiecare 5 minute.</span></p>
+  <p class="meta"><span class="en">since 9 Oct</span><span class="ro">din 9 oct.</span> · launchd · Swift</p>
+</li><li class="part">
+  <div class="part-head"><span class="num">17</span><h4><span class="en">Tests and the gate</span><span class="ro">Testele și poarta</span></h4><span class="chip c-live"><svg class="eye e-live" viewBox="0 0 28 16" aria-hidden="true"><use href="#eye-live"/></svg><span class="en">Live</span><span class="ro">Live</span></span></div>
+  <p><span class="en">217 check scripts. One script is the only way into the version I run. At the last merge: 186 of 186 fast checks passed. On the golden list: 917 checks passed, 0 failed, 7 functions not covered.</span><span class="ro">217 scripturi de verificare. Un singur script e singura cale spre versiunea pe care o rulez. La ultima integrare: 186 din 186 verificări rapide trecute. Pe lista de aur: 917 verificări trecute, 0 picate, 7 funcții neacoperite.</span></p>
+  <p class="meta"><span class="en">since 7 Oct</span><span class="ro">din 7 oct.</span> · bash · Python</p>
+</li></ul></details>
+</section>
+
+<section id="order">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">04</span><h2><span class="en">The order it happened in</span><span class="ro">Ordinea în care s-a întâmplat</span></h2></div>
+  <p class="intro"><span class="en">44 of those 45 days have at least one saved change to the code.</span><span class="ro">44 din cele 45 de zile au cel puțin o modificare salvată în cod.</span></p>
+  <ol class="tl"><li><time><span class="en">7 Oct</span><span class="ro">7 oct.</span></time><span><span class="en">The first saved version: hold a key, speak, get an answer. Speech turned to text on the Mac, Claude, a voice, a first memory.</span><span class="ro">Prima versiune salvată: țin o tastă, vorbesc, primesc răspuns. Vorbire transformată în text pe Mac, Claude, o voce, prima memorie.</span></span></li><li><time><span class="en">9 Oct</span><span class="ro">9 oct.</span></time><span><span class="en">Decision cards: yes, no, undo.</span><span class="ro">Cardurile de decizie: da, nu, înapoi.</span></span></li><li><time><span class="en">11 Oct</span><span class="ro">11 oct.</span></time><span><span class="en">Reminders, spoken confirmation, the Touch ID token. The first fast test gate.</span><span class="ro">Mementouri, confirmare prin voce, jetonul cu Touch ID. Prima poartă rapidă de teste.</span></span></li><li><time><span class="en">12 Oct</span><span class="ro">12 oct.</span></time><span><span class="en">Talking without a button.</span><span class="ro">Vorbit fără buton.</span></span></li><li><time><span class="en">16 Oct</span><span class="ro">16 oct.</span></time><span><span class="en">Echo cancellation through Apple's Voice Processing. Memory repaired after it lost data.</span><span class="ro">Anularea ecoului prin Voice Processing de la Apple. Memoria reparată după ce a pierdut date.</span></span></li><li><time><span class="en">21 Oct</span><span class="ro">21 oct.</span></time><span><span class="en">The golden list, and one single path into the version I run.</span><span class="ro">Lista de aur și o singură cale spre versiunea pe care o rulez.</span></span></li><li><time><span class="en">24–25 Oct</span><span class="ro">24–25 oct.</span></time><span><span class="en">The voiceprint. The statue bust.</span><span class="ro">Amprenta vocii. Bustul de statuie.</span></span></li><li><time><span class="en">27–31 Oct</span><span class="ro">27–31 oct.</span></time><span><span class="en">The first hands: music.</span><span class="ro">Primele mâini: muzica.</span></span></li><li><time><span class="en">4–11 Nov</span><span class="ro">4–11 nov.</span></time><span><span class="en">More hands: mail, bills, a panel for my businesses.</span><span class="ro">Mai multe mâini: mail, facturi, un panou pentru afacerile mele.</span></span></li><li><time><span class="en">13–14 Nov</span><span class="ro">13–14 nov.</span></time><span><span class="en">The orb replaces the bust.</span><span class="ro">Orbul înlocuiește bustul.</span></span></li><li><time><span class="en">18 Nov</span><span class="ro">18 nov.</span></time><span><span class="en">Speech to text as I speak, and a trained wake word. Both still unproven live.</span><span class="ro">Vorbire în text pe măsură ce vorbesc și cuvânt de trezire antrenat. Amândouă încă nedovedite live.</span></span></li><li><time><span class="en">20 Nov</span><span class="ro">20 nov.</span></time><span><span class="en">Merge number 64. Its live test is still to come.</span><span class="ro">Integrarea numărul 64. Testul ei live urmează.</span></span></li></ol>
+</section>
+
+<section id="broke">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">05</span><h2><span class="en">What broke</span><span class="ro">Ce s-a stricat</span></h2></div>
+  <p class="intro"><span class="en">Eight failures, with dates. Most left a rule behind.</span><span class="ro">Opt eșecuri, cu date. Cele mai multe au lăsat în urmă o regulă.</span></p>
+  <div class="broke-grid"><article class="broke"><div><time><span class="en">16 Oct</span><span class="ro">16 oct.</span></time><h4><span class="en">It deleted its own memories.</span><span class="ro">Și-a șters singur amintirile.</span></h4><p><span class="en">I said “remember that I prefer coffee with milk”. The phrase overwrote a stored fact, and a rule in the code then deleted two session summaries. The originals could not be recovered. I rebuilt them from the app log. The rule was removed: no deletion without a confirmed card.</span><span class="ro">Am spus «ține minte că prefer cafeaua cu lapte». Fraza a suprascris un fapt salvat, iar o regulă din cod a șters apoi două rezumate de sesiune. Originalele nu s-au mai putut recupera. Le-am refăcut din jurnalul aplicației. Regula a fost scoasă: nicio ștergere fără un card confirmat.</span></p></div></article><article class="broke"><div><time><span class="en">27 Oct</span><span class="ro">27 oct.</span></time><h4><span class="en">A test killed 252 real processes.</span><span class="ro">Un test a omorât 252 de procese reale.</span></h4><p><span class="en">A test ran the real shutdown code with its target filter broken on purpose. The stop commands reached other apps on my Mac: 88 processes and 164. Now those commands leave through one module, a test may stop only the process it started, and tests are blocked from the real data. Another incident, on 18 Nov, added one more guard.</span><span class="ro">Un test a rulat codul real de oprire cu filtrul de ținte stricat intenționat. Comenzile de oprire au ajuns la alte aplicații de pe Mac: 88 de procese și 164. Acum comenzile astea pleacă printr-un singur modul, un test poate opri doar procesul pe care l-a pornit, iar testele sunt blocate de la datele reale. Un alt incident, pe 18 nov., a mai adăugat o gardă.</span></p></div></article><article class="broke"><div><time><span class="en">12–16 Oct</span><span class="ro">12–16 oct.</span></time><h4><span class="en">My own echo cancellation failed.</span><span class="ro">Anularea mea de ecou a eșuat.</span></h4><p><span class="en">I tried three approaches so Argus could hear “Stop” over its own voice. None passed my thresholds. Apple's Voice Processing did. I kept my version only as a measuring tool.</span><span class="ro">Am încercat trei variante ca Argus să audă «Stop» peste propria voce. Niciuna n-a trecut pragurile mele. Voice Processing de la Apple a trecut. Varianta mea a rămas doar ca instrument de măsură.</span></p></div></article><article class="broke"><div><time><span class="en">13 Oct</span><span class="ro">13 oct.</span></time><h4><span class="en">After an hour it was almost ten times slower.</span><span class="ro">După o oră era de aproape zece ori mai lent.</span></h4><p><span class="en">The start of the answer went from 1.7 s to 16.2 s, then listening went silent. The measured cause: a memory cache with no limit had grown to 14.1 GB, and the speech model had been loaded twice. Fixed with a 1 GB limit and a guard against double loading.</span><span class="ro">Începutul răspunsului a ajuns de la 1,7 s la 16,2 s, apoi ascultarea a amuțit. Cauza, măsurată: o memorie-tampon fără limită crescuse la 14,1 GB, iar modelul de vorbire fusese încărcat de două ori. Reparat cu o limită de 1 GB și o gardă împotriva încărcării duble.</span></p></div></article><article class="broke"><div><time><span class="en">13 Oct</span><span class="ro">13 oct.</span></time><h4><span class="en">Real phrases ended up in a test set.</span><span class="ro">Fraze reale au ajuns într-un set de test.</span></h4><p><span class="en">Things the microphone picked up that were not meant for Argus had slipped into a test set. I rewrote the whole project history to take them out and replaced them with a neutral set. A rule now says a phrase that isn't addressed to Argus is not saved. Old debug recordings were outside that cleanup.</span><span class="ro">Fraze prinse de microfon, care nu îi erau adresate lui Argus, intraseră într-un set de test. Am rescris tot istoricul proiectului ca să le scot și le-am înlocuit cu un set neutru. O regulă spune acum că fraza care nu i se adresează lui Argus nu se salvează. Înregistrările vechi de depanare au rămas în afara curățeniei.</span></p></div></article><article class="broke"><div><time><span class="en">7–12 Oct</span><span class="ro">7–12 oct.</span></time><h4><span class="en">Three speech setups, rejected by measurement.</span><span class="ro">Trei variante de transcriere, respinse prin măsurare.</span></h4><p><span class="en">One model got 15.9% of words wrong on clean speech and 26.9–50% on short natural replies. Another setup reached 32.1%. A third was slow on long clips, so I kept a mix of two models. In a later test the slow one was more accurate, 9.5% against 11.2%, and I still kept the mix for speed. On 18 Nov I decided to move speech to an online service. That is not yet proven live.</span><span class="ro">Un model greșea 15,9 % din cuvinte pe vorbire curată și 26,9–50 % pe replici scurte, naturale. Altă variantă a ajuns la 32,1 %. A treia era lentă pe clipuri lungi, așa că am păstrat un amestec de două modele. Într-un test de mai târziu cea lentă a fost mai exactă, 9,5 % față de 11,2 %, și tot amestecul l-am păstrat, pentru viteză. Pe 18 nov. am hotărât să mut vorbirea la un serviciu online. Asta nu e încă dovedită live.</span></p></div></article><article class="broke"><div><time><span class="en">7 Oct</span><span class="ro">7 oct.</span></time><h4><span class="en">The voice that won the blind test lost.</span><span class="ro">Vocea care a câștigat testul orb a pierdut.</span></h4><p><span class="en">One voice model won my blind accent test. I rejected it: 340 ms slower to the first sound, and it cost more credits.</span><span class="ro">Un model de voce mi-a câștigat testul orb de accent. L-am respins: cu 340 ms mai lent până la primul sunet și mai scump la credite.</span></p></div></article><article class="broke has-pic"><img src="bust.jpg" alt="" width="560" height="560" loading="lazy"><div><time><span class="en">14 Nov</span><span class="ro">14 nov.</span></time><h4><span class="en">The statue I threw away.</span><span class="ro">Statuia pe care am aruncat-o.</span></h4><p><span class="en">A statue bust with a peacock tail, confirmed live on 27 Oct. It looked good, did almost nothing and took a lot of space. An orb replaced it.</span><span class="ro">Un bust de statuie cu coadă de păun, confirmat live pe 27 oct. Arăta bine, nu făcea aproape nimic și ocupa mult loc. L-a înlocuit un orb.</span></p></div></article></div>
+</section>
+
+<section id="rules">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">06</span><h2><span class="en">The rules built into it</span><span class="ro">Regulile puse în el</span></h2></div>
+  <p class="intro"><span class="en">An assistant with hands needs rules. Most of these live in code, where the AI can't talk its way around them.</span><span class="ro">Un asistent cu mâini are nevoie de reguli. Cele mai multe stau în cod, unde AI-ul nu le poate ocoli vorbind.</span></p>
+  <p class="big touch"><span class="en">My fingerprint has the last word. Argus does not delete for good and does not send anything until I touch the sensor, and I get 3 seconds to change my mind.</span><span class="ro">Amprenta mea are ultimul cuvânt. Argus nu șterge definitiv și nu trimite nimic până nu ating senzorul, iar eu am 3 secunde să mă răzgândesc.</span></p><ol class="rules"><li><span class="en">It never pays. It fills in the form and I press the button. Phone calls: not for now.</span><span class="ro">Nu plătește niciodată. El completează formularul, eu apăs butonul. Telefoane: deocamdată nu.</span></li><li><span class="en">Anything that can't be undone needs a card and my confirmation. A new tool counts as irreversible until it is marked otherwise.</span><span class="ro">Tot ce nu se mai poate desface cere un card și confirmarea mea. O unealtă nouă e socotită ireversibilă până e marcată altfel.</span></li><li><span class="en">The risk level is computed in code, from the operation itself. The AI doesn't decide it.</span><span class="ro">Treapta de risc se calculează în cod, din operația însăși. AI-ul nu o hotărăște.</span></li><li><span class="en">Permanent deletion and sending go through Touch ID. Things that can be undone need only a spoken yes.</span><span class="ro">Ștergerea definitivă și trimiterea trec prin Touch ID. Ce se poate desface cere doar un «da» spus cu voce.</span></li><li><span class="en">The functions that actually write need a single-use permission tied to that exact operation, issued only after Touch ID. 20 ways of writing tested, 0 writes without it.</span><span class="ro">Funcțiile care scriu efectiv cer o permisiune de unică folosință, legată de operația exactă și dată doar după Touch ID. 20 de căi de scriere testate, 0 scrieri fără ea.</span></li><li><span class="en">“Yes” is recognized in code, from a fixed list of words. Anything ambiguous starts nothing.</span><span class="ro">«Da» e recunoscut în cod, dintr-o listă fixă de cuvinte. Ce e ambiguu nu pornește nimic.</span></li><li><span class="en">Memory refuses passwords, keys, card numbers, national ID numbers and medical terms before anything is written.</span><span class="ro">Memoria refuză parole, chei, numere de card, CNP și termeni medicali înainte să scrie ceva.</span></li><li><span class="en">Only one Argus runs at a time, and the version I run changes through one script only.</span><span class="ro">Rulează un singur Argus odată, iar versiunea pe care o rulez se schimbă printr-un singur script.</span></li></ol>
+</section>
+
+<section id="cant">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">07</span><h2><span class="en">What it still can't do</span><span class="ro">Ce nu poate încă</span></h2></div>
+  
+  <ul class="cant"><li><span class="en">No camera. It cannot see the room or an object I hold up.</span><span class="ro">Nu are cameră video. Nu vede încăperea și nici obiectele pe care i le arăt.</span></li><li><span class="en">No phone version. Approving with Face ID from the phone is planned and not started.</span><span class="ro">Nu are versiune pentru telefon. Aprobarea cu Face ID de pe telefon e în plan, neîncepută.</span></li><li><span class="en">No lights, plugs or thermostat.</span><span class="ro">Nu controlează lumini, prize sau termostat.</span></li><li><span class="en">It doesn't send mail on its own. Real sending is switched off.</span><span class="ro">Nu trimite mailuri singur. Trimiterea reală e oprită.</span></li><li><span class="en">No payments and no phone calls. That one is a decision.</span><span class="ro">Fără plăți și fără telefoane. Asta e o decizie.</span></li><li><span class="en">One Mac, in Romanian. The words it accepts as yes and no exist only in Romanian.</span><span class="ro">Un singur Mac, în română. Cuvintele pe care le acceptă ca «da» și «nu» există doar în română.</span></li><li><span class="en">An English reply shorter than 2 seconds can come out written as Romanian when the local backup is listening.</span><span class="ro">O replică în engleză mai scurtă de 2 secunde poate ieși scrisă ca română când ascultă rezerva locală.</span></li><li><span class="en">In loud background noise it separates my voice from the noise only with Apple's echo cancelling (Voice Processing) running.</span><span class="ro">În zgomot puternic de fond îmi desparte vocea de zgomot doar cu anularea de ecou de la Apple (Voice Processing) pornită.</span></li><li><span class="en">The newest version, merge 64 from 20 Nov, hasn't had its live test yet.</span><span class="ro">Cea mai nouă versiune, integrarea 64 din 20 nov., nu și-a avut încă testul live.</span></li></ul>
+</section>
+
+<section id="cost">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">08</span><h2><span class="en">What it costs</span><span class="ro">Cât costă</span></h2></div>
+  
+  <div class="cost"><div><h4><span class="en">On the Mac, no cost</span><span class="ro">Pe Mac, fără cost</span></h4><p><span class="en">The backup speech-to-text, voice detection, voice recognition and the offline voice all run on the Mac.</span><span class="ro">Transcrierea de rezervă, detecția vocii, recunoașterea vocii și vocea fără internet rulează toate pe Mac.</span></p></div><div><h4><span class="en">Paid services</span><span class="ro">Servicii plătite</span></h4><p><span class="en">Claude for the brain, ElevenLabs for the voice, Soniox for speech to text. Soniox has a daily budget I set at $0.50. Claude Code, the tool I build with, and the image tool I used for the orb are paid too.</span><span class="ro">Claude pentru creier, ElevenLabs pentru voce, Soniox pentru transformarea vorbirii în text. Soniox are un buget zilnic pus de mine la 0,50 $. Claude Code, unealta cu care construiesc, și unealta de imagini folosită pentru orb sunt și ele plătite.</span></p></div></div><p><span class="en">There is no monthly figure here because I have not measured a full month.</span><span class="ro">Aici nu e o cifră lunară pentru că n-am măsurat încă o lună întreagă.</span></p>
+</section>
+
+<section id="tomorrow">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">09</span><h2><span class="en">Six lessons from these 45 days</span><span class="ro">Șase lecții din cele 45 de zile</span></h2></div>
+  
+  <ol class="adv"><li><h4><span class="en">Build the voice loop first.</span><span class="ro">Construiește întâi bucla de voce.</span></h4><p><span class="en">It was the first thing I had working, and it told me I wanted the rest.</span><span class="ro">A fost primul lucru care mi-a mers și mi-a arătat că vreau restul.</span></p></li><li><h4><span class="en">Build the confirmation card before the hands.</span><span class="ro">Fă cardul de confirmare înaintea mâinilor.</span></h4><p><span class="en">Mine came on 9 Oct. The first hands came on 27 Oct, 18 days later. I would keep that order.</span><span class="ro">Al meu a venit pe 9 oct. Primele mâini au venit pe 27 oct., 18 zile mai târziu. Aș păstra ordinea.</span></p></li><li><h4><span class="en">Decide what “it works” means.</span><span class="ro">Hotărăște ce înseamnă «merge».</span></h4><p><span class="en">For me: proven on the real Argus. Passing tests means something else.</span><span class="ro">La mine: dovedit pe Argus-ul real. «Trece testele» înseamnă altceva.</span></p></li><li><h4><span class="en">Never test on your real data.</span><span class="ro">Nu testa niciodată pe datele tale reale.</span></h4><p><span class="en">I learned it on 16 Oct and again on 27 Oct.</span><span class="ro">Am învățat-o pe 16 oct. și încă o dată pe 27 oct.</span></p></li><li><h4><span class="en">Measure, then choose.</span><span class="ro">Măsoară, apoi alege.</span></h4><p><span class="en">The voice that won my blind test is not the one I kept.</span><span class="ro">Vocea care mi-a câștigat testul orb nu e cea pe care am păstrat-o.</span></p></li><li><h4><span class="en">Write down what failed, with the date.</span><span class="ro">Scrie ce a eșuat, cu dată.</span></h4><p><span class="en">This guide is that list.</span><span class="ro">Ghidul ăsta e lista aceea.</span></p></li></ol><p class="big"><span class="en">It has taken me 45 days so far, and 8 of 17 parts are live.</span><span class="ro">Până acum mi-a luat 45 de zile, iar 8 din 17 piese sunt live.</span></p>
+</section>
+
+<section id="book" class="book">
+  <div class="sec-head"><span class="drop" aria-hidden="true"></span><span class="sec-n">10</span><h2><span class="en">This is the map. The book is the road.</span><span class="ro">Asta e harta. Cartea e drumul.</span></h2></div>
+  <p><span class="en"><i>Construit noaptea</i>, in English <i>Built at Night</i>, is the long version: every decision and every dead end, in order. It is in progress. There is no release date yet.</span><span class="ro"><i>Construit noaptea</i> e varianta lungă: fiecare decizie și fiecare drum închis, în ordine. E în lucru. Încă nu are dată de apariție.</span></p>
+  <p><a class="cta" href="https://www.instagram.com/construitnoaptea/"><span class="en">Follow the build, episode by episode</span><span class="ro">Urmărește construcția, episod cu episod</span> <span aria-hidden="true">→</span> @construitnoaptea</a></p>
+</section>
+</main>
+
+<footer>
+  <p><span class="en">State of the build on 20 November 2026. The figures come from the project's own code history and logs. Guide version 1.</span><span class="ro">Starea construcției la 20 noiembrie 2026. Cifrele vin din istoricul de cod și din jurnalele proiectului. Ghid, versiunea 1.</span></p>
+</footer>
+<script>(function(){
+  var root=document.documentElement, KEY="argus-guide-lang";
+  function setLang(l,save){
+    root.dataset.lang=l; root.lang=l;
+    document.querySelectorAll(".lang button").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.set===l));});
+    document.title = l==="ro" ? "Cum l-am construit pe Argus" : "How I built Argus";
+    if(save){try{localStorage.setItem(KEY,l);}catch(e){}}
+    requestAnimationFrame(update);
+  }
+  var saved=null; try{saved=localStorage.getItem(KEY);}catch(e){}
+  var first = saved || ((navigator.language||"").toLowerCase().indexOf("ro")===0 ? "ro" : "en");
+  document.querySelectorAll(".lang button").forEach(function(b){b.addEventListener("click",function(){setLang(b.dataset.set,true);});});
+
+  var main=document.querySelector("main"), fill=document.getElementById("thread-fill");
+  var secs=[].slice.call(document.querySelectorAll("main section"));
+  function update(){
+    var r=main.getBoundingClientRect(), mark=window.innerHeight*0.62;
+    var h=Math.max(0,Math.min(r.height,mark-r.top));
+    fill.style.height=h+"px";
+    secs.forEach(function(s){ s.classList.toggle("on", s.getBoundingClientRect().top+58 < mark); });
+  }
+  var tick=false;
+  function onScroll(){ if(!tick){tick=true;requestAnimationFrame(function(){tick=false;update();});} }
+  window.addEventListener("scroll",onScroll,{passive:true});
+  window.addEventListener("resize",onScroll);
+
+  var orb=document.getElementById("orb");
+  if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){ orb.removeAttribute("autoplay"); orb.pause(); }
+  else { var p=orb.play(); if(p&&p.catch){p.catch(function(){});} }
+
+  setLang(first,false);
+})();
+</script>
+</body>
+</html>
